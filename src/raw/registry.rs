@@ -130,13 +130,16 @@ impl RegistryCell {
     /// The cell's transition buffer is reused, unless it is much bigger than
     /// `node` needs. Cells live as long as the builder, so a buffer that only
     /// ever grows ends up as big as the widest node that was ever stored in
-    /// its cell. Over a long build, that tends towards 256 transitions in
-    /// every cell (over 100MB for the default registry on 64-bit targets),
-    /// even though most nodes have only a few transitions.
+    /// its cell. Over a long build, that tends towards room for 256 or more
+    /// transitions in every cell (over 100MB for the default registry on
+    /// 64-bit targets), even though most nodes have only a few transitions.
     ///
-    /// Since `Vec` at most doubles its capacity when it grows, the slack
-    /// (twice what `node` needs, and never below 4) means a buffer that was
-    /// just grown to fit `node` is never shrunk again straight away.
+    /// `Vec` does not promise a growth strategy, but today a buffer grows to
+    /// the larger of twice its old capacity and the length needed. So with a
+    /// slack of twice what `node` needs (and never below 4), a buffer that
+    /// was just grown to fit `node` is not shrunk again straight away. If
+    /// that ever changes, the cost is an extra reallocation, not a wrong
+    /// result.
     fn set_node(&mut self, node: &BuilderNode) {
         self.node.clone_from(node);
         let needed = self.node.trans.len().max(4);
